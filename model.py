@@ -63,21 +63,15 @@ class Model():
             ##################
 
             lstm_cell = tf.contrib.rnn.BasicLSTMCell(self.dim_embedding,
-                                                forget_bias=0.0,
-                                                state_is_tuple=True)
+                                                forget_bias=0.0)
             lstm_cell = tf.contrib.rnn.DropoutWrapper(lstm_cell,
                                                       input_keep_prob=1.0,
-                                                      output_keep_prob=self.keep_prob)
-
-            cell = tf.contrib.rnn.MultiRNNCell(
-                [lstm_cell] * self.rnn_layers,
-                state_is_tuple=True)
+                                             output_keep_prob=self.keep_prob)
+            cell = tf.contrib.rnn.MultiRNNCell([lstm_cell] * self.rnn_layers)
 
             self.state_tensor = cell.zero_state(self.batch_size, tf.float32)
 
-            outputs_tensor, self.outputs_state_tensor = tf.nn.dynamic_rnn(cell, inputs=data,
-                                                                          initial_state=self.state_tensor,
-                                                                          time_major=False)
+            outputs_tensor, self.outputs_state_tensor = tf.nn.dynamic_rnn(cell,inputs=data,initial_state=self.state_tensor,time_major=False)
 
         # concate every time step
         seq_output = tf.concat(outputs_tensor, 1)
@@ -89,9 +83,9 @@ class Model():
             ##################
             # Your Code here
             ##################
-            weight = tf.Variable(tf.truncated_normal([self.dim_embedding, self.num_words], stddev=0.1), dtype=tf.float32)
-            bias = tf.Variable(tf.constant(0.1, shape=[self.num_words]), dtype=tf.float32)
-            logits = tf.nn.bias_add(tf.matmul(seq_output_final, weight),bias=bias)
+            W = tf.get_variable('W',[self.dim_embedding,self.num_words])
+            b = tf.get_variable('b',[self.num_words])
+            logits = tf.matmul(seq_output_final, W) + b
 
         tf.summary.histogram('logits', logits)
 
