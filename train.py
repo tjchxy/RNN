@@ -8,7 +8,7 @@ import os
 import tensorflow as tf
 
 import utils
-from model1 import Model
+from model import Model
 from utils import read_data
 
 from flags import parse_args
@@ -18,13 +18,9 @@ FLAGS, unparsed = parse_args()
 logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s', level=logging.DEBUG)
 
-def read_data1(filename):
-    with open(filename, encoding="utf-8") as f:
-        data = f.read()
-    data = list(data)
-    return data
-vocabulary = read_data1('./QuanSongCi.txt')
-print('Data size', len(vocabulary))
+
+vocabulary = read_data(FLAGS.text)
+print('*************Data size', len(vocabulary))
 
 
 with open(FLAGS.dictionary, encoding='utf-8') as inf:
@@ -54,22 +50,19 @@ with tf.Session() as sess:
     except Exception:
         logging.debug('no check point found....')
 
-    for x in range(1):
+    for x in range(2):
         logging.debug('epoch [{0}]....'.format(x))
         state = sess.run(model.state_tensor)
-        for batch,labels in utils.get_train_data(vocabulary, batch_size=FLAGS.batch_size, num_steps=FLAGS.num_steps):
-
+        for dl in utils.get_train_data(vocabulary, batch_size=FLAGS.batch_size, num_steps=FLAGS.num_steps):
             ##################
             # Your Code here
             ##################
-            feed_dict={model.X:batch,
-                       model.Y:labels,
-                       model.keep_prop:0.8,
-                       model.tensor_state:state}
-            
-            
+            input_x = dl[0]
+            input_y = dl[1]
+            feed_dict = {model.X:input_x, model.Y:input_y, model.keep_prob:0.8, model.state_tensor:state}           
+
             gs, _, state, l, summary_string = sess.run(
-                [model.global_step, model.optimizer, model.outputs_state_tensor, model.loss, model.merged_summary_op], feed_dict=feed_dict)
+                [model.global_step, model.optimizer, model.state_tensor, model.loss, model.merged_summary_op], feed_dict=feed_dict)
             summary_string_writer.add_summary(summary_string, gs)
 
             if gs % 10 == 0:
